@@ -88,25 +88,28 @@ elif choice == "🔑 Login":
     username = st.text_input("👤 Username")
     password = st.text_input("🔒 Password", type="password")
 
-    if st.button("🔓 Login"):
-     if st.session_state.failed_login >= 3:
-        if time.time() - st.session_state.lockout_time < LOCKOUT_DURATION:
-            st.error("🚫 Too many failed attempts. Please try again later.")
-            st.stop()
+     if time.time() < st.session_state.lockout_time:
+        remaining = int(st.session_state.lockout_time - time.time())
+        st.error(f"⏳ Too many failed attempts. Please wait {remaining} seconds.")
+        st.stop()
+
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+
+    if st.button("Login"):
+        if username in stored_data and stored_data[username]["password"] == hash_password(password):
+            st.session_state.authenticated_user = username
+            st.session_state.failed_attempts = 0
+            st.success(f"✅ Welcome {username}!")
         else:
-            st.session_state.failed_login = 0
+            st.session_state.failed_attempts += 1
+            remaining = 3 - st.session_state.failed_attempts
+            st.error(f"❌ Invalid credentials! Attempts left: {remaining}")
 
-    data = load_data()
-    hashed_password = hash_password_pbkdf2(password)
-
-    if username in data and data[username] == hashed_password:
-        st.session_state.authenticate_user = username
-        st.success("✅ Logged in successfully!")
-        st.session_state.failed_login = 0
-    else:
-        st.session_state.failed_login += 1
-        st.session_state.lockout_time = time.time()
-        st.error("❌ Invalid username or password.")
+            if st.session_state.failed_attempts >= 3:
+                st.session_state.lockout_time = time.time() + LOCKOUT_DURATION
+                st.error("🔒 Too many failed attempts. Locked for 60 seconds.")
+                st.stop()
 
 # Register page
 elif choice == "📝 Register":
