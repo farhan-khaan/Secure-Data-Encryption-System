@@ -85,28 +85,43 @@ if choice == "🏠 Home":
 # Login page
 elif choice == "🔑 Login":
     st.subheader("🔑 Login")
+
     username = st.text_input("👤 Username")
     password = st.text_input("🔒 Password", type="password")
 
-    if st.button("🔓 Login"):
-     if st.session_state.failed_login >= 3:
-        if time.time() - st.session_state.lockout_time < LOCKOUT_DURATION:
-            st.error("🚫 Too many failed attempts. Please try again later.")
-            st.stop()
+    login_clicked = st.button("🔓 Login")
+
+    if login_clicked:
+        # Lockout check
+        if st.session_state.failed_login >= 3:
+            time_since_lockout = time.time() - st.session_state.lockout_time
+            if time_since_lockout < LOCKOUT_DURATION:
+                remaining = int(LOCKOUT_DURATION - time_since_lockout)
+                st.error(f"🚫 Too many failed attempts. Try again in {remaining} seconds.")
+                st.stop()
+            else:
+                st.session_state.failed_login = 0  # Reset on timeout
+
+        if username and password:
+            data = load_data()
+            hashed_input = hash_password_pbkdf2(password)
+
+            if username in data:
+                stored_password = data[username].get("password")
+                if hashed_input == stored_password:
+                    st.success("✅ Login successful!")
+                    st.session_state.authenticate_user = username
+                    st.session_state.failed_login = 0  # Reset attempts
+                else:
+                    st.session_state.failed_login += 1
+                    st.session_state.lockout_time = time.time()
+                    st.error("❌ Incorrect password.")
+            else:
+                st.session_state.failed_login += 1
+                st.session_state.lockout_time = time.time()
+                st.error("❌ Username does not exist.")
         else:
-            st.session_state.failed_login = 0
-
-    data = load_data()
-    hashed_password = hash_password_pbkdf2(password)
-
-    if username in data and data[username] == hashed_password:
-        st.session_state.authenticate_user = username
-        st.success("✅ Logged in successfully!")
-        st.session_state.failed_login = 0
-    else:
-        st.session_state.failed_login += 1
-        st.session_state.lockout_time = time.time()
-        st.error("❌ Invalid username or password.")
+            st.warning("⚠️ Please enter both username and password.")
 
 # Register page
 elif choice == "📝 Register":
