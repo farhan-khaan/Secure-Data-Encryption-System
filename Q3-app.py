@@ -56,7 +56,7 @@ def decrypt_data(encrypted_data: str, password: str) -> str:
         return None
 
 # App UI
-st.title("🔒 Secure Multi User Data System")
+st.title("🔒 Secure User Data System")
 menu = ["🏠 Home", "🔑 Login", "📝 Register", "📥 Store Data", "📤 Retrieve Data"]
 choice = st.sidebar.selectbox("Select an option", menu)
 
